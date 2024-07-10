@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
+use block_rss_client\output\item;
+use core\context\user;
+use core_customfield\category;
+
 /**
  * Block course_recommendations is defined here.
  *
@@ -21,17 +25,20 @@
  * @copyright   2024 HPS eAcademy
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class block_course_recommendations extends block_base {
+class block_course_recommendations extends block_base
+{
 
     /**
      * Initializes class member variables.
      */
-    public function init() {
+    public function init()
+    {
         // Needed by Moodle to differentiate between blocks.
         $this->title = get_string('pluginname', 'block_course_recommendations');
     }
 
-    public function hide_header() {
+    public function hide_header()
+    {
         return true;
     }
 
@@ -40,7 +47,8 @@ class block_course_recommendations extends block_base {
      *
      * @return stdClass The block contents.
      */
-    public function get_content() {
+    public function get_content()
+    {
 
         global $CFG, $USER, $DB, $OUTPUT, $PAGE;
 
@@ -67,32 +75,71 @@ class block_course_recommendations extends block_base {
         // Get the categoryid from the url
         $category_id = optional_param('categoryid', 0, PARAM_INT);
 
-        // Show course categories count if categoryid is not null
+        // Show courses under each subcategory
         if ($category_id) {
-            $sql = "
-                SELECT cc1.id, cc1.name, cc1.timemodified,
-                (SELECT COUNT(*) FROM {course_categories} cc2 WHERE cc2.parent = cc1.id) AS coursecategoriescount
-                FROM {course_categories} cc1
-                WHERE cc1.parent = :categoryid";
-            $params = ['categoryid' => $category_id];
-            $categories = $DB->get_records_sql($sql, $params);
+            // Get the top category
+            $category = core_course_category::get($category_id);
 
-            $data = [
-                'pluginname' => get_string('pluginname', 'block_course_recommendations'),
-                'categories' => []
-            ];
-        
+            // Get the categories under the top category
+            $categories = $category->get_children();
+
+            // Get the title of the block
+            $text = html_writer::tag('h3', get_string('pluginname', 'block_course_recommendations'));
+            $text .= html_writer::empty_tag('br');
+
+            // Create a container and a carousel
+            $text .= html_writer::start_div('container');
+            $text .= html_writer::start_div('course-recommendations owl-carousel owl-theme owl-loaded owl-drag');
+            $text .= html_writer::start_div('owl-stage-outer');
+            $text .= html_writer::start_div('owl-stage');
+
             foreach ($categories as $category) {
-                $data['categories'][] = [
-                    'name' => $category->name,
-                    'image_url' => (new moodle_url('/theme/edash/pix/category.jpg'))->out(),
-                    'course_url' => (new moodle_url('/course/index.php', ['categoryid' => $category->id]))->out(),
-                    'modified' => userdate($category->timemodified, '%d %B %Y', 0),
-                    'coursecategoriescount' => $category->coursecategoriescount
-                ];
+                // Get the subcategories of the category
+                $subcategories = $category->get_children();
+
+                foreach ($subcategories as $subcategory) {
+                    // Get the courses under the subcategory
+                    $courses = $subcategory->get_courses();
+
+                    // Get top 3 courses
+                    $courses = array_slice($courses, 0, 3);
+
+                    // Loop through the courses and create the owl-item
+                    foreach ($courses as $course) {
+                        $text .= html_writer::start_div('owl-item');
+                        $text .= html_writer::start_div('single-courses-box');
+
+                            $text .= html_writer::start_div('image');
+                                $text .= html_writer::empty_tag('img', ['class' => 'img-whp', 'src' => (new moodle_url('/theme/edash/pix/category.jpg'))->out(), 'alt' => 'image']);
+                                $text .= html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]), "", ['class' => 'link-btn']);
+                            $text .= html_writer::end_div();
+
+                            $text .= html_writer::start_div('content');
+                                $text .= html_writer::start_tag('h3');
+                                    $text .= html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]), $course->get_formatted_fullname());
+                                $text .= html_writer::end_tag('h3');
+                                $text .= html_writer::start_div('author');
+                                    $text .= html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]), userdate($course->timemodified, '%d %B %Y'));
+                                $text .= html_writer::end_div();
+                                $text .= html_writer::start_div('price');
+                                    $text .= html_writer::start_tag('span', ['class' => 'new-price']);
+                                        $text .= html_writer::link(new moodle_url('/course/index.php', ['categoryid' => $category->id]), $category->get_formatted_name());
+                                    $text .= html_writer::end_tag('span');
+                                $text .= html_writer::end_div();
+                            $text .= html_writer::end_div();
+
+                        $text .= html_writer::end_div();
+                        $text .= html_writer::end_div();
+                    }
+                }
             }
-        
-            $this->content->text = $OUTPUT->render_from_template('block_course_recommendations/default', $data);
+
+            $text .= html_writer::end_div();
+            $text .= html_writer::end_div();
+            $text .= html_writer::end_div();
+            $text .= html_writer::end_div();
+
+            $this->content->text = $text;
             return $this->content;
         }
 
@@ -111,7 +158,8 @@ class block_course_recommendations extends block_base {
      *
      * The function is called immediately after init().
      */
-    public function specialization() {
+    public function specialization()
+    {
 
         // Load user defined title and make sure it's never empty.
         if (empty($this->config->title)) {
@@ -126,7 +174,8 @@ class block_course_recommendations extends block_base {
      *
      * @return bool True if the global configuration is enabled.
      */
-    public function has_config() {
+    public function has_config()
+    {
         return true;
     }
 
@@ -135,22 +184,25 @@ class block_course_recommendations extends block_base {
      *
      * @return string[] Array of pages and permissions.
      */
-    public function applicable_formats() {
+    public function applicable_formats()
+    {
         return array(
             'course' => true,
         );
     }
 
-     /**
+    /**
      * Returns the role that best describes the featured course categories block.
      * 
      * @return string
      */
-    public function get_aria_role() {
+    public function get_aria_role()
+    {
         return 'navigation';
     }
 
-    function _self_test() {
+    function _self_test()
+    {
         return true;
     }
 }
