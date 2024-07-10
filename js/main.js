@@ -5,7 +5,9 @@ $(document).ready(function(){
         nav:false,
         responsive:{
             0:{
-                items:1
+                items:1,
+                nav:true,
+                dots: false
             },
             576:{
                 items:2
