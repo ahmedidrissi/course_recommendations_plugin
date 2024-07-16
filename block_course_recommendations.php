@@ -17,6 +17,7 @@
 use block_rss_client\output\item;
 use core\context\user;
 use core_customfield\category;
+use local_course_recommendations_ws\external\get_recommendations;
 
 /**
  * Block course_recommendations is defined here.
@@ -72,6 +73,9 @@ class block_course_recommendations extends block_base
         $this->content->icons = array();
         $this->content->footer = '';
 
+        $recommendations = get_recommendations::execute();
+        print_r($recommendations);
+
         // Get the categoryid from the url
         $category_id = optional_param('categoryid', 0, PARAM_INT);
 
@@ -115,17 +119,17 @@ class block_course_recommendations extends block_base
                             $text .= html_writer::end_div();
 
                             $text .= html_writer::start_div('content');
+
                                 $text .= html_writer::start_tag('h3');
                                     $text .= html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]), $course->get_formatted_fullname());
                                 $text .= html_writer::end_tag('h3');
-                                $text .= html_writer::start_div('author');
-                                    $text .= html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]), userdate($course->timemodified, '%d %B %Y'));
-                                $text .= html_writer::end_div();
+
+                                $text .= html_writer::tag('span', 'Modified ' . userdate($course->timemodified, '%d %B %Y'), ['class' => 'author']);
+                                
                                 $text .= html_writer::start_div('price');
-                                    $text .= html_writer::start_tag('span', ['class' => 'new-price']);
-                                        $text .= html_writer::link(new moodle_url('/course/index.php', ['categoryid' => $category->id]), $category->get_formatted_name());
-                                    $text .= html_writer::end_tag('span');
+                                    $text .= html_writer::tag('span', $category->get_formatted_name(), ['class' => 'new-price']);
                                 $text .= html_writer::end_div();
+
                             $text .= html_writer::end_div();
 
                         $text .= html_writer::end_div();
