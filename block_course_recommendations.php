@@ -44,6 +44,28 @@ class block_course_recommendations extends block_base
     }
 
     /**
+     * Get custom user field value
+     *
+     * @param int $userid The user ID
+     * @param string $fieldshortname The shortname of the custom field
+     * @return string The custom field value
+     */
+    function get_custom_user_field_value($userid, $fieldshortname) {
+        global $DB;
+
+        // Get the field ID from the shortname
+        $fieldid = $DB->get_field('user_info_field', 'id', ['shortname' => $fieldshortname], MUST_EXIST);
+
+        // Get the field value for the user
+        $fieldvalue = $DB->get_field('user_info_data', 'data', [
+            'userid' => $userid,
+            'fieldid' => $fieldid
+        ], MUST_EXIST);
+
+        return $fieldvalue;
+    }
+
+    /**
      * Returns the block contents.
      *
      * @return stdClass The block contents.
@@ -79,12 +101,21 @@ class block_course_recommendations extends block_base
         // Show courses under each subcategory
         if ($category_id) {
 
+            $institution = $USER->institution;
+            if ($institution == '') {
+                $institution = 'Unknown';
+            }
+
+            $function = $this->get_custom_user_field_value($USER->id, 'FONCTION');
+            if ($function == '') {
+                $function = 'Unknown';
+            }
+
             // Get the recommendations
             $recommendations = get_recommendations::execute(
                 $USER->id,
-                'HPS Academy',
-                'Business Analyst I',
-                'en',
+                $institution,
+                $function,
                 $category_id
             );
 
