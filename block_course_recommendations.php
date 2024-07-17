@@ -73,19 +73,20 @@ class block_course_recommendations extends block_base
         $this->content->icons = array();
         $this->content->footer = '';
 
-        $recommendations = get_recommendations::execute();
-        print_r($recommendations);
-
         // Get the categoryid from the url
         $category_id = optional_param('categoryid', 0, PARAM_INT);
 
         // Show courses under each subcategory
         if ($category_id) {
-            // Get the top category
-            $category = core_course_category::get($category_id);
 
-            // Get the categories under the top category
-            $categories = $category->get_children();
+            // Get the recommendations
+            $recommendations = get_recommendations::execute(
+                $USER->id,
+                'HPS Academy',
+                'Business Analyst I',
+                'en',
+                $category_id
+            );
 
             // Get the title of the block
             $text = html_writer::tag('h3', get_string('pluginname', 'block_course_recommendations'));
@@ -97,45 +98,31 @@ class block_course_recommendations extends block_base
             $text .= html_writer::start_div('owl-stage-outer');
             $text .= html_writer::start_div('owl-stage');
 
-            foreach ($categories as $category) {
-                // Get the subcategories of the category
-                $subcategories = $category->get_children();
+            foreach ($recommendations as $course) {
+                $text .= html_writer::start_div('owl-item');
+                $text .= html_writer::start_div('single-courses-box');
 
-                foreach ($subcategories as $subcategory) {
-                    // Get the courses under the subcategory
-                    $courses = $subcategory->get_courses();
+                $text .= html_writer::start_div('image');
+                $text .= html_writer::empty_tag('img', ['class' => 'img-whp', 'src' => $course['image'], 'alt' => 'image']);
+                $text .= html_writer::link($course['url'], "", ['class' => 'link-btn']);
+                $text .= html_writer::end_div();
 
-                    // Get top 3 courses
-                    $courses = array_slice($courses, 0, 3);
+                $text .= html_writer::start_div('content');
 
-                    // Loop through the courses and create the owl-item
-                    foreach ($courses as $course) {
-                        $text .= html_writer::start_div('owl-item');
-                        $text .= html_writer::start_div('single-courses-box');
+                $text .= html_writer::start_tag('h3');
+                $text .= html_writer::link($course['url'], $course['fullname']);
+                $text .= html_writer::end_tag('h3');
 
-                            $text .= html_writer::start_div('image');
-                                $text .= html_writer::empty_tag('img', ['class' => 'img-whp', 'src' => (new moodle_url('/theme/edash/pix/category.jpg'))->out(), 'alt' => 'image']);
-                                $text .= html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]), "", ['class' => 'link-btn']);
-                            $text .= html_writer::end_div();
+                $text .= html_writer::tag('span', 'Modified ' . $course['timemodified'], ['class' => 'author']);
 
-                            $text .= html_writer::start_div('content');
+                $text .= html_writer::start_div('price');
+                $text .= html_writer::tag('span', $course['category'], ['class' => 'new-price']);
+                $text .= html_writer::end_div();
 
-                                $text .= html_writer::start_tag('h3');
-                                    $text .= html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]), $course->get_formatted_fullname());
-                                $text .= html_writer::end_tag('h3');
+                $text .= html_writer::end_div();
 
-                                $text .= html_writer::tag('span', 'Modified ' . userdate($course->timemodified, '%d %B %Y'), ['class' => 'author']);
-                                
-                                $text .= html_writer::start_div('price');
-                                    $text .= html_writer::tag('span', $category->get_formatted_name(), ['class' => 'new-price']);
-                                $text .= html_writer::end_div();
-
-                            $text .= html_writer::end_div();
-
-                        $text .= html_writer::end_div();
-                        $text .= html_writer::end_div();
-                    }
-                }
+                $text .= html_writer::end_div();
+                $text .= html_writer::end_div();
             }
 
             $text .= html_writer::end_div();
