@@ -50,7 +50,8 @@ class block_course_recommendations extends block_base
      * @param string $fieldshortname The shortname of the custom field
      * @return string The custom field value
      */
-    function get_custom_user_field_value($userid, $fieldshortname) {
+    function get_custom_user_field_value($userid, $fieldshortname)
+    {
         global $DB;
 
         // Get the field ID from the shortname
@@ -134,14 +135,18 @@ class block_course_recommendations extends block_base
                 $text .= html_writer::start_div('single-courses-box');
 
                 $text .= html_writer::start_div('image');
-                $text .= html_writer::empty_tag('img', ['class' => 'img-whp', 'src' => $course['image'], 'alt' => 'image']);
-                $text .= html_writer::link($course['url'], "", ['class' => 'link-btn']);
+                $text .= html_writer::empty_tag('img', [
+                    'class' => 'img-whp',
+                    'src' => $CFG->wwwroot . '/theme/edash/pix/category.jpg',
+                    'alt' => 'image'
+                ]);
+                $text .= html_writer::link($CFG->wwwroot . '/course/view.php?id=' . $course['id'], "", ['class' => 'link-btn']);
                 $text .= html_writer::end_div();
 
                 $text .= html_writer::start_div('content');
 
                 $text .= html_writer::start_tag('h3');
-                $text .= html_writer::link($course['url'], $course['fullname']);
+                $text .= html_writer::link($CFG->wwwroot . '/course/view.php?id=' . $course['id'], $course['fullname']);
                 $text .= html_writer::end_tag('h3');
 
                 $text .= html_writer::tag('span', 'Modified ' . $course['timemodified'], ['class' => 'author']);
