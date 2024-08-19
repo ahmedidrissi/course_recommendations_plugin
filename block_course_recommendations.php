@@ -135,6 +135,7 @@ class block_course_recommendations extends block_base
                 $text .= html_writer::start_div('single-courses-box');
 
                 $text .= html_writer::start_div('image');
+                // TODO: Replace the image with the actual course image
                 $text .= html_writer::empty_tag('img', [
                     'class' => 'img-whp',
                     'src' => $CFG->wwwroot . '/theme/edash/pix/category.jpg',
